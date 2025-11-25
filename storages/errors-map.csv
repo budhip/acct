@@ -1,0 +1,175 @@
+key,code,error
+
+CreateSubCategoryRequest.code_max,INVALID_LENGTH,field can have a maximum length of 5 characters
+CreateSubCategoryRequest.code_min,INVALID_LENGTH,field must be at least 5 characters
+CreateSubCategoryRequest.code_numeric,INVALID_VALUES,field can only contain numeric values
+CreateSubCategoryRequest.code_required,MISSING_FIELD,field is missing
+CreateSubCategoryRequest.name_max,INVALID_LENGTH,field can have a maximum length of 100 characters
+UpdateSubCategoryRequest.name_max,INVALID_LENGTH,field can have a maximum length of 100 characters
+
+DoCreateAccountRequest.name_max,INVALID_LENGTH,field can have a maximum length of 100 characters
+DoCreateCategoryRequest.name_max,INVALID_LENGTH,field can have a maximum length of 100 characters
+DoUpdateCategoryRequest.name_max,INVALID_LENGTH,field can have a maximum length of 100 characters
+DoUpdateAccountRequest.name_max,INVALID_LENGTH,field can have a maximum length of 100 characters
+
+CreateProductTypeRequest.code_max,INVALID_LENGTH,field can have a maximum length of 5 characters
+CreateProductTypeRequest.code_min,INVALID_LENGTH,field must be at least 3 characters
+CreateProductTypeRequest.name_max,INVALID_LENGTH,field can have a maximum length of 100 characters
+
+DoGetSubLedgerAccountsRequest.searchBy_oneof,INVALID_VALUES,one of accountNumber or altId
+
+databaseError,DATABASE_ERROR,database error
+unableToGetData,INTERNAL_SERVER_ERROR,unable to get data
+unableToCreateData,INTERNAL_SERVER_ERROR,unable to create data
+failedSubscribingKafka,INTERNAL_SERVER_ERROR,failed subscribing kafka
+failedPublishToKafka,INTERNAL_SERVER_ERROR,failed publish message to kafka
+failedBindingPayload,UNEXPECTED_ERROR,failed binding payload
+failedToCreateStorage,INTERNAL_SERVER_ERROR,failed to create storage
+bigQueryError,BQ_ERROR,bq error
+
+failedFromExternalClient,EXTERNAL_SERVER_ERROR,failed from external client 
+failedGetFromCache,CACHE_ERROR,failed get from cache
+failedSetToCache,CACHE_ERROR,failed set to cache
+failedUnmarshal,INVALID_VALUES,failed json unmarshal
+failedMarshal,INVALID_VALUES,failed json marshal
+invalidIgateMethod,INVALID_VALUES,invalid igate method
+accountNumberDifferentEntity,INVALID_VALUES,account number cannot be a different entity
+transactionIdsNotSync,INVALID_VALUES,transaction ids is not in sync
+
+accountNumberNotFound,DATA_NOT_FOUND,account number not found
+legacyIdNotFound,DATA_NOT_FOUND,legacy id not found
+accountTypeNotValid,DATA_NOT_FOUND,account type not valid
+categoryCodeNotFound,DATA_NOT_FOUND,category code not found
+coaTypeNotFound,DATA_NOT_FOUND,coa type code not found
+currencyNotFound,DATA_NOT_FOUND,currency not found
+dataNotFound,DATA_NOT_FOUND,data not found
+entityCodeNotFound,DATA_NOT_FOUND,entity code not found
+productTypeNotFound,DATA_NOT_FOUND,product type code not found
+subCategoryCodeNotFound,DATA_NOT_FOUND,sub category code not found
+ownerIdNotFound,DATA_NOT_FOUND,owner id not found
+transactionIdNotFound,DATA_NOT_FOUND,transaction id not found
+loanPartnerAccountNotFound,DATA_NOT_FOUND,loan partner account not found
+entityNotFound,DATA_NOT_FOUND,entity not found
+
+
+productTypeCodeIsExist,DATA_IS_EXIST,product type code is exist
+accountTypeIsExist,DATA_IS_EXIST,account type is exist
+altIdIsExist,DATA_IS_EXIST,alternate id is exist
+categoryCodeIsExist,DATA_IS_EXIST,category code is exist
+dataGLIsExceedsTheLimit,DATA_IS_EXCEEDS_LIMIT,the data is too big and we will send a csv file to your email
+dataSubLedgerIsExceedsTheLimit,DATA_IS_EXCEEDS_LIMIT,the data exceeds the limit
+dataTrialBalanceDetailIsExceedsTheLimit,DATA_IS_EXCEEDS_LIMIT,the data exceeds the limit
+dataIsExist,DATA_IS_EXIST,data is exist
+entityCodeIsExist,DATA_IS_EXIST,entity code is exist
+subCategoryCodeIsExist,DATA_IS_EXIST,sub category code is exist
+transactionIdIsExist,DATA_IS_EXIST,transaction id is exist
+legacyIDAlreadyExists,LEGACY_ID_ALREADY_EXISTS,the resource could not be updated because the legacy id already exists
+journalAccountIsExist,DATA_IS_EXIST,unable to change the entity because the account has a transactions
+accountNumberIsExist,DATA_IS_EXIST,account number is exist
+
+accountNumber_required,MISSING_FIELD,field is missing
+accountType_required,MISSING_FIELD,field is missing
+altId_required,MISSING_FIELD,field is missing
+categoryCode_required,MISSING_FIELD,field is missing
+coaTypeCode_required,MISSING_FIELD,field is missing
+code_required,MISSING_FIELD,field is missing
+currency_required,MISSING_FIELD,field is missing
+endDate_required,MISSING_FIELD,field is missing
+entityCode_required,MISSING_FIELD,field is missing
+name_required,MISSING_FIELD,field is missing
+ownerId_required,MISSING_FIELD,field is missing
+startDate_required,MISSING_FIELD,field is missing
+startDateAndEndDateRequiredIfOneIsFilled,MISSING_FIELD,start date or end date must be filled in if either is filled in
+status_required,MISSING_FIELD,field is missing
+subCategoryCode_required,MISSING_FIELD,field is missing
+metadata_required,MISSING_FIELD,field is missing
+key_required,MISSING_FIELD,field is missing
+value_required,MISSING_FIELD,field is missing
+referenceNumber_required,MISSING_FIELD,field is missing
+transactionId_required,MISSING_FIELD,field is missing
+orderType_required,MISSING_FIELD,field is missing
+transactionDate_required,MISSING_FIELD,field is missing
+processingDate_required,MISSING_FIELD,field is missing
+transactions_required,MISSING_FIELD,field is missing
+transactionType_required,MISSING_FIELD,field is missing
+transactionTypeName_required,MISSING_FIELD,field is missing
+account_required,MISSING_FIELD,field is missing
+narrative_required,MISSING_FIELD,field is missing
+amount_required,MISSING_FIELD,field is missing
+isDebit_required,MISSING_FIELD,field is missing
+search_required_with,MISSING_FIELD,field is missing
+startDate_required_with,MISSING_FIELD,field is missing
+endDate_required_with,MISSING_FIELD,field is missing
+jobName_required,MISSING_FIELD,field is missing
+partnerId_required,MISSING_FIELD,field is missing
+partnerName_required,MISSING_FIELD,field is missing
+loanKind_required,MISSING_FIELD,field is missing
+loanSubCategoryCode_required,MISSING_FIELD,field is missing
+adjustmentDate_required,MISSING_FIELD,field is missing
+ownerId_required_without_all,MISSING_FIELD,required fields at least ownerId
+altId_required_without_all,MISSING_FIELD,required fields at least altId
+accountNumbers_required_without_all,MISSING_FIELD,required fields at least accountNumbers
+accountType_required_without_all,MISSING_FIELD,required fields at least accountType
+loanKind_required_without_all,MISSING_FIELD,required fields at least loanKind
+partnerId_required_without_all,MISSING_FIELD,required fields at least partnerId
+loanSubCategoryCode_required_without_all,MISSING_FIELD,required fields at least loanSubCategoryCode
+entityCode_required_without_all,MISSING_FIELD,required fields at least entityCode
+name_required_without_all,MISSING_FIELD,required fields at least name
+partnerName_maxnospace,INVALID_LENGTH,field can have a maximum length of 55 characters
+partnerName_minnospace,INVALID_LENGTH,field can have a minimum length of 4 characters
+partnerId_maxnospace,INVALID_LENGTH,field can have a maximum length of 15 characters
+
+categoryCode_max,INVALID_LENGTH,field can have a maximum length of 3 characters
+categoryCode_min,INVALID_LENGTH,field must be at least 3 characters
+coaTypeCode_max,INVALID_LENGTH,field can have a maximum length of 3 characters
+coaTypeCode_min,INVALID_LENGTH,field must be at least 3 characters
+code_max,INVALID_LENGTH,field can have a maximum length of 3 characters
+code_min,INVALID_LENGTH,field must be at least 3 characters
+currency_max,INVALID_LENGTH,field can have a maximum length of 3 characters
+currency_min,INVALID_LENGTH,field must be at least 3 characters
+description_max,INVALID_LENGTH,field can have a maximum length of 50 characters
+entityCode_max,INVALID_LENGTH,field can have a maximum length of 3 characters
+entityCode_min,INVALID_LENGTH,field must be at least 3 characters
+name_max,INVALID_LENGTH,field can have a maximum length of 50 characters
+ownerId_max,INVALID_LENGTH,field can have a maximum length of 15 characters
+ownerId_min,INVALID_LENGTH,field must be at least 1 characters
+productTypeCode_max,INVALID_LENGTH,field can have a maximum length of 5 characters
+productTypeCode_min,INVALID_LENGTH,field must be at least 3 characters
+subCategoryCode_max,INVALID_LENGTH,field can have a maximum length of 5 characters
+subCategoryCode_min,INVALID_LENGTH,field must be at least 5 characters
+
+altId_alphanumDashUscore,INVALID_VALUES,only accept alphanumeric with dash (-) and underscore (_)
+categoryCode_numeric,INVALID_VALUES,field can only contain numeric values
+code_alpha,INVALID_VALUES,field can only contain alpha values
+code_numeric,INVALID_VALUES,field can only contain alpha values
+currency_alpha,INVALID_VALUES,field can only contain alpha values
+dateRangeMax31Days,INVALID_VALUES,date range max 31 days
+email_email,INVALID_VALUES,format email not valid
+endDateIsAfterToday,INVALID_VALUES,end date cannot be later than today
+dateIsGreaterThanToday,INVALID_VALUES,date cannot be greater than today
+entityCode_numeric,INVALID_VALUES,field can only contain numeric values
+invalidFormatAmount,INVALID_VALUES,invalid format amount
+invalidFormatDate,INVALID_VALUES,invalid format date
+limitMustBeGreaterThanZero,INVALID_VALUES,the limit must be greater than zero
+name_alphanumericMix,INVALID_VALUES,only accept alphanumeric and some special characters
+name_nospecial,INVALID_VALUES,input field no special characters
+name_noStartEndSpaces,INVALID_VALUES,fields should not accept spaces at start and end of input
+normalBalance_oneof,INVALID_VALUES,one of debit or credit
+ownerId_alphanum,INVALID_VALUES,field can only contain alphanumeric values
+productTypeCode_numeric,INVALID_VALUES,field can only contain numeric values
+startDateAndEndDateEqualToday,INVALID_VALUES,start date or end date cannot be the same as today
+startDateIsAfterEndDate,INVALID_VALUES,end date must be greater than start date
+status_oneof,INVALID_VALUES,one of active or inactive
+subCategoryCode_numeric,INVALID_VALUES,field can only contain numeric values
+transactionsEmpty,INVALID_VALUES,transaction data is empty
+sort_oneof,INVALID_VALUES,one of asc or desc
+sortBy_oneof,INVALID_VALUES,one of createdAt or subCategoryCode
+searchBy_oneof,INVALID_VALUES,one of accountNumber or altId or ownerId
+jobName_oneof,INVALID_VALUES,invalid job name
+accountType_oneof,INVALID_VALUES,one of CASH_IN_TRANSIT_DISBURSE CASH_IN_TRANSIT_REPAYMENT INTERNAL_ACCOUNTS_REVENUE_AMARTHA INTERNAL_ACCOUNTS_ADMIN_FEE_AMARTHA INTERNAL_ACCOUNTS_PPH_AMARTHA INTERNAL_ACCOUNTS_PPN_AMARTHA
+balanceSheetDateIsTodayOrLater,INVALID_VALUES,balance sheet date cannot be today or later than today
+
+transactionDate_datetime,INVALID_VALUES,format must be 2006-01-02 15:04:05
+processingDate_datetime,INVALID_VALUES,format must be 2006-01-02 15:04:05
+closedPeriodNotFound,DATA_NOT_FOUND,closed period not found
+periodAlreadyClosed,DATA_NOT_FOUND,period already closed

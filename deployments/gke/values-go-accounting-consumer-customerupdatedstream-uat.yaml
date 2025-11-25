@@ -1,0 +1,63 @@
+replicaCount: 0
+
+env: uat
+
+image:
+  repository: asia-southeast2-docker.pkg.dev/amartha-ewallet-dev-370304/docker/go-accounting
+  pullPolicy: IfNotPresent
+  tag: ""
+
+args:
+  - ./go-accounting-consumer
+  - run
+  - "-n=customer_updated_stream"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "go-accounting-consumer-customerupdatedstream"
+
+readinessProbe:
+  failureThreshold: 10
+  httpGet:
+    path: /api/health/readiness
+    port: 80
+    scheme: HTTP
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 10
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 400Mi
+  requests:
+    cpu: 100m
+    memory: 200Mi
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "80"
+  prometheus.io/path: "/metrics"
+
+volumeMounts:
+  - name: secret-volume
+    mountPath: /opt/Amartha/config
+    readOnly: true
+
+volumes:
+  - name: secret-volume
+    secret:
+      secretName: go-accounting-consumer-customerupdatedstream-vault-service
+
+vault:
+  enabled: true
+  auth:
+    method: "kubernetes"
+    kubernetes:
+      role: go-accounting-consumer-customerupdatedstream
+      serviceAccount: go-accounting-consumer-customerupdatedstream
+  secrets:
+    service:
+      secretPath: apps/core-finance-platform/GO_ACCOUNTING

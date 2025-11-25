@@ -1,0 +1,2 @@
+reference_number,transaction_id,order_type,transaction_date,processing_date,currency,transaction_type1,transaction_type_name1,account_debit1,account_credit1,narrative1,amount1,transaction_type2,transaction_type_name2,account_debit2,account_credit2,narrative2,amount2,metadata
+001-TRX-MANUAL-23042024-1,b13583d7-adba-4aba-9261-3dee86867ec7s,TUP,2024-04-23 09:20:00,2024-04-23 09:20:00,IDR,TUPIN,Amartha Top Up represents Institutional Lender,142001000000001,211001000381110,Amartha Top Up represents Institutional Lender,3368495938,a,,,,,,,

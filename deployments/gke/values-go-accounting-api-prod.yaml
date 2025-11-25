@@ -1,0 +1,89 @@
+replicaCount: 8
+
+env: prod
+
+image:
+  repository: asia-southeast2-docker.pkg.dev/amartha-ewallet-dev-370304/docker/go-accounting
+  pullPolicy: IfNotPresent
+  tag: ""
+
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: go-accounting-api@amartha-ewallet-prod.iam.gserviceaccount.com
+  name: go-accounting-api
+
+readinessProbe:
+  failureThreshold: 10
+  httpGet:
+    path: /api/health/readiness
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 10
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: nginx-internal
+    nginx.ingress.kubernetes.io/proxy-ssl-verify: "false"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-body-size: "3m"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: go-accounting.payments-prod.amartha.id
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+    - hosts:
+        - go-accounting.payments-prod.amartha.id
+      secretName: go-accounting-payments-prod-amartha-id
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2000Mi
+  requests:
+    cpu: 500m
+    memory: 1500Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 8
+  maxReplicas: 12
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+
+volumeMounts:
+  - name: secret-volume
+    mountPath: /opt/Amartha/config
+    readOnly: true
+
+volumes:
+  - name: secret-volume
+    secret:
+      secretName: go-accounting-api-vault-service
+
+vault:
+  enabled: true
+  auth:
+    method: "kubernetes"
+    kubernetes:
+      role: go-accounting-api
+      serviceAccount: go-accounting-api
+  secrets:
+    service:
+      secretPath: apps/core-finance-platform/GO_ACCOUNTING

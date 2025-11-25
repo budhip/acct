@@ -1,0 +1,590 @@
+---
+image: 
+  name: asia.gcr.io/amartha-dev/amartha/go-base:1.21-alpine
+  username: _json_key
+  password: "$GCR_DEV_JSON_KEY"
+
+options:
+  docker: true
+
+definitions:
+  caches:
+    gomod: ~/.cache/go-build
+    gopathmod: $GOPATH/pkg/mod
+  services:
+    consul:
+      image: consul:1.8.0
+    redis:
+      image: redis:5.0.7
+  steps:
+    - step: &unit-test
+        name: run unit test
+        size: 2x
+        services:
+          - consul
+          - redis
+        caches: &gomod-cache
+          - gomod
+          - gopathmod
+        script:
+          - &config-git git config --global --add url."git@bitbucket.org:".insteadOf "https://bitbucket.org/"
+          - &install-deps GOPRIVATE=bitbucket.org/Amartha go get ./...
+          # - &upgrade-ugorji-workaround |
+          #   rm -rf /go/pkg/mod/github.com/coreos/etcd@v3.3.10+incompatible/client/keys.generated.go
+          #   go get github.com/ugorji/go/codec@none
+          - curl -XPUT --data-binary "@$(pwd)/config/config.local.yaml" http://127.0.0.1:8500/v1/kv/${consul_service_key}
+          - export PORT=8080
+          - export CONSUL_URL=127.0.0.1:8500
+          - go test -race -short -coverprofile=./cov.out ./internal/...
+        artifacts:
+          - cov.out
+    - step: &semantic-versioning
+        name: Create tag
+        trigger: manual
+        image:
+          name: asia.gcr.io/amartha-dev/amartha/semantic-release:1.1.0
+          username: _json_key
+          password: "$GCR_DEV_JSON_KEY"
+        script:
+          - touch semantic_version.txt
+          - npx semantic-release
+          - new_version="$(cat ./semantic_version.txt)"
+          - >
+            if [[ -z "$new_version" ]]; then
+                echo "No new version generated. Please use semantic versioning in your commit messages"
+                exit 1
+            else
+                echo "New version '$new_version' generated"
+                exit 0
+            fi
+        artifacts:
+          - semantic_version.txt
+
+    - step: &api-automation-dev
+          name   : 'API Automation Testing DEV'
+          size   : 2x
+          image:
+            name: asia.gcr.io/amartha-dev/amartha/robot-alpine-api:1.0.2
+            username: _json_key
+            password: "$GCR_DEV_JSON_KEY"
+          script : 
+            - export ENV='DEV'
+            - export TEAM='ACCOUNTING'
+            - cd ./tests/api-robot
+            - git submodule add https://$QA_BITBUCKET_USERNAME:$QA_BITBUCKET_APP_PASSWORD@bitbucket.org/Amartha/automation-utilities.git
+            - python -m robot.run -x test-reports/junit_report.xml --variablefile keyword/data/dev_env.py . || true
+            - python automation-utilities/testrail/main.py output.xml ACCOUNTING regression testrail_data.json || true
+            - python automation-utilities/slack/slack-notification.py API
+            - python automation-utilities/utilities/compare-result.py 90
+          artifacts:
+            - "**/api-robot/log.html"
+            - "**/api-robot/output.xml"
+            - "**/api-robot/report.html"
+            - "**/api-robot/test-reports/junit_report.xml"
+
+    - step: &api-automation-dev-debug
+          name   : 'API Automation Testing DEV Debug'
+          size   : 2x
+          image:
+            name: asia.gcr.io/amartha-dev/amartha/robot-alpine-api:1.0.2
+            username: _json_key
+            password: "$GCR_DEV_JSON_KEY"
+          script :
+            - export ENV='DEV'
+            - export TEAM='ACCOUNTING'
+            - cd ./tests/api-robot
+            - git submodule add https://$QA_BITBUCKET_USERNAME:$QA_BITBUCKET_APP_PASSWORD@bitbucket.org/Amartha/automation-utilities.git
+            - python -m robot.run -x test-reports/junit_report.xml --variablefile keyword/data/dev_env.py . || true
+            - python automation-utilities/testrail/main.py output.xml ACCOUNTING regression testrail_data.json || true
+            - python automation-utilities/slack/slack-notification.py API
+            - python automation-utilities/utilities/compare-result.py 90
+          artifacts:
+            - "**/api-robot/log.html"
+            - "**/api-robot/output.xml"
+            - "**/api-robot/report.html"
+            - "**/api-robot/test-reports/junit_report.xml"
+
+    - step: &api-automation-dev-by-tags
+          name   : 'API Automation Testing DEV By Tags'
+          size   : 2x
+          image:
+            name: asia.gcr.io/amartha-dev/amartha/robot-alpine-api:1.0.2
+            username: _json_key
+            password: "$GCR_DEV_JSON_KEY"
+          script :
+            - export ENV='DEV'
+            - export TEAM='ACCOUNTING'
+            - cd ./tests/api-robot
+            - git submodule add https://$QA_BITBUCKET_USERNAME:$QA_BITBUCKET_APP_PASSWORD@bitbucket.org/Amartha/automation-utilities.git
+            - python -m robot.run -x test-reports/junit_report.xml --variablefile keyword/data/dev_env.py --include $TAGS . || true
+            - python automation-utilities/testrail/main.py output.xml ACCOUNTING $TAGS testrail_data.json || true
+            - python automation-utilities/slack/slack-notification.py API
+            - python automation-utilities/utilities/compare-result.py 90
+          artifacts:
+            - "**/api-robot/log.html"
+            - "**/api-robot/output.xml"
+            - "**/api-robot/report.html"
+            - "**/api-robot/test-reports/junit_report.xml"
+
+    - step: &api-automation-uat
+          name   : 'API Automation Testing UAT'
+          size   : 2x
+          image:
+            name: asia.gcr.io/amartha-dev/amartha/robot-alpine-api:1.0.2
+            username: _json_key
+            password: "$GCR_DEV_JSON_KEY"
+          script :
+            - export ENV='UAT'
+            - export TEAM='ACCOUNTING'
+            - cd ./tests/api-robot
+            - git submodule add https://$QA_BITBUCKET_USERNAME:$QA_BITBUCKET_APP_PASSWORD@bitbucket.org/Amartha/automation-utilities.git
+            - python -m robot.run -x test-reports/junit_report.xml --variablefile keyword/data/uat_env.py . || true
+            - python automation-utilities/testrail/main.py output.xml ACCOUNTING regression testrail_data.json || true
+            - python automation-utilities/slack/slack-notification.py API
+            - python automation-utilities/utilities/compare-result.py 90
+          artifacts:
+            - "**/api-robot/log.html"
+            - "**/api-robot/output.xml"
+            - "**/api-robot/report.html"
+            - "**/api-robot/test-reports/junit_report.xml"
+
+    - step: &api-automation-uat-by-tags
+          name   : 'API Automation Testing UAT By Tags'
+          size   : 2x
+          image:
+            name: asia.gcr.io/amartha-dev/amartha/robot-alpine-api:1.0.2
+            username: _json_key
+            password: "$GCR_DEV_JSON_KEY"
+          script : 
+            - export ENV='UAT'
+            - export TEAM='ACCOUNTING'
+            - cd ./tests/api-robot
+            - git submodule add https://$QA_BITBUCKET_USERNAME:$QA_BITBUCKET_APP_PASSWORD@bitbucket.org/Amartha/automation-utilities.git
+            - python -m robot.run -x test-reports/junit_report.xml --variablefile keyword/data/uat_env.py --include $TAGS . || true
+            - python automation-utilities/testrail/main.py output.xml ACCOUNTING $TAGS testrail_data.json || true
+            - python automation-utilities/slack/slack-notification.py API
+            - python automation-utilities/utilities/compare-result.py 90
+          artifacts:
+            - "**/api-robot/log.html"
+            - "**/api-robot/output.xml"
+            - "**/api-robot/report.html"
+            - "**/api-robot/test-reports/junit_report.xml"
+    
+    - step: &build-push-docker
+        image:
+          name: asia-southeast2-docker.pkg.dev/amartha-dev/docker/argocd-deployer:v0.6.1
+          username: _json_key
+          password: "$GCR_DEV_JSON_KEY"
+        caches:
+          - docker
+        script:
+          - export IS_MULTIPLE_SVC=true
+          - export TAGS=$(git rev-parse --short HEAD)
+          - /ci/scripts/auth-gcp.sh
+          - export DOCKER_REGISTRY=asia-southeast2-docker.pkg.dev/amartha-ewallet-dev-370304/docker
+          - /ci/scripts/build-push-docker.sh
+
+clone:
+  depth: full
+
+pipelines:
+  pull-requests:
+      "**":
+          - step: *unit-test
+
+  branches:
+    FN-7-move-to-vault-k8s:
+      - step: 
+          name: build artifact
+          caches: *gomod-cache
+          size: 2x
+          script:
+            - *config-git
+            - *install-deps
+            # - *upgrade-ugorji-workaround
+            - export TZ="Asia/Jakarta"
+            - export BUILD_DATE="$(date "+%Y%m%d-%H%M%S-%Z")"
+            - rm -f "${service_executable_and_user}"
+            - GOPRIVATE=bitbucket.org/Amartha GOOS=linux GOARCH=amd64 go build -o go-accounting-api -ldflags "-X main.commit=${BITBUCKET_COMMIT} -X main.build_datetime=${BUILD_DATE} -s -w -linkmode external -extldflags \"-static\" " ./cmd/api/main.go
+            - GOPRIVATE=bitbucket.org/Amartha GOOS=linux GOARCH=amd64 go build -o go-accounting-consumer -ldflags "-X main.commit=${BITBUCKET_COMMIT} -X main.build_datetime=${BUILD_DATE} -s -w -linkmode external -extldflags \"-static\" " ./cmd/consumer/main.go
+            - GOPRIVATE=bitbucket.org/Amartha GOOS=linux GOARCH=amd64 go build -o go-accounting-cronjob -ldflags "-X main.commit=${BITBUCKET_COMMIT} -X main.build_datetime=${BUILD_DATE} -s -w -linkmode external -extldflags \"-static\" " ./cmd/job/main.go
+          artifacts:
+            - go-accounting-api
+            - go-accounting-consumer
+            - go-accounting-cronjob
+      - stage:
+          name: "Deploy to DEV [ArgoCD]"
+          deployment: DEV
+          steps:
+            - step:
+                <<: *build-push-docker
+                name: build and push docker image
+                runs-on:
+                  - gke.amartha.dev
+            - step: 
+                name: "Deploy to DEV"
+                runs-on:
+                  - gke.amartha.dev
+                image:
+                  name: asia-southeast2-docker.pkg.dev/amartha-dev/docker/argocd-deployer:v0.6.1
+                  username: _json_key
+                  password: "$GCR_DEV_JSON_KEY"
+                script:
+                  - export IS_MULTIPLE_SVC=true
+                  - export ENVIRONMENT=pay-${ENV_NAME}
+                  - export TAG=$(git rev-parse --short HEAD)
+                  - export SERVICE_TYPES=cronjob,consumer,api
+                  - /ci/scripts/argocd-sync.sh
+          trigger: manual
+      - step:
+          name: Deploy to UAT [ArgoCD]
+          runs-on:
+            - gke.amartha.uat
+          deployment: UAT
+          image:
+            name: asia-southeast2-docker.pkg.dev/amartha-dev/docker/argocd-deployer:v0.6.1
+            username: _json_key
+            password: "$GCR_DEV_JSON_KEY"
+          script:
+            - export IS_MULTIPLE_SVC=true
+            - export ENVIRONMENT=pay-${ENV_NAME}
+            - export TAG=$(git rev-parse --short HEAD)
+            - export SERVICE_TYPES=cronjob,consumer,api
+            - /ci/scripts/argocd-sync.sh
+          trigger: manual
+          
+    master:
+      - step : *unit-test
+      - parallel:
+          - step:
+              name: generate service API documentation
+              image:
+                name: asia.gcr.io/amartha-dev/amartha/redoc:1.0.2
+                username: _json_key
+                password: "$GCR_DEV_JSON_KEY"
+              script:
+                - echo "Generate Swagger documentation"
+                - export VERSION_NUMBER=$(cat ./semantic_version.txt)
+                # Replace existing version in the original file with the latest semantic version
+                - yq e '.info.version = strenv(VERSION_NUMBER)' -i ./docs/swagger.yaml
+                # Convert the YAML file to HTML format
+                - redoc-cli bundle ./docs/swagger.yaml --output ./${service_executable_and_user}.html
+                - echo ${DEV_GCP_SERVICE_ACCOUNT} | base64 -d > ./amartha.json
+                - gcloud auth activate-service-account --key-file ./amartha.json
+                # Upload HTML file to the GCS bucket
+                - gsutil cp ./${service_executable_and_user}.html gs://${DEV_GCS_BUCKET}/specs
+                # Invoke another Bitbucket pipeline from this pipeline
+                # Don't change anything unless you know what you are doing
+                - pipe: atlassian/trigger-pipeline:4.2.1
+                  variables:
+                    BITBUCKET_USERNAME: ${BITBUCKET_USERNAME}
+                    BITBUCKET_APP_PASSWORD: ${BITBUCKET_APP_PASSWORD}
+                    REPOSITORY: "amartha-service-catalog"
+                    PIPELINE_VARIABLES: >
+                      [{
+                        "key": "ENVIRONMENT",
+                        "value": "dev",
+                        "secured": false
+                      },
+                      {
+                        "key": "GCP_SERVICE_ACCOUNT",
+                        "value": "${DEV_GCP_SERVICE_ACCOUNT}",
+                        "secured": true
+                      },
+                      {
+                        "key": "GCS_BUCKET",
+                        "value": "${DEV_GCS_BUCKET}",
+                        "secured": false
+                      }]
+
+          - step:
+              name: list outdated dependencies
+              caches: &gomod-cache
+                - gomod
+                - gopathmod
+              script:
+                # https://github.com/psampaz/go-mod-outdated
+                - echo 'List Outdated Dependencies'
+                - *config-git
+                - go install github.com/psampaz/go-mod-outdated@v0.8.0
+                - go list -u -m -json all | go-mod-outdated -direct -update
+          - step:
+              name: static code analysis
+              image: sonarsource/sonar-scanner-cli:4.3
+              runs-on: 
+                - gke.amartha.dev
+              script:
+                - echo 'Static code analysis'
+                - >-
+                  sonar-scanner -Dsonar.projectKey=${service_executable_and_user}
+                  -Dsonar.sources=. -Dsonar.exclusions=tests/**/*.*,**/*_test.go,**/*_mock.go -Dsonar.tests=.
+                  -Dsonar.test.inclusions=**/*_test.go -Dsonar.host.url=${sq_url}
+                  -Dsonar.coverage.exclusions=*.*,cmd/**/*.*,docs/**/*.*,internal/config/**/*.*,internal/contract/**/*.*,internal/deliveries/consumer/**/*.*,internal/deliveries/http/router.go,internal/deliveries/http/healthcheck.go,internal/deliveries/http/v1/v1.go,internal/deliveries/http/common/**/*.*,internal/deliveries/http/middleware/**/*.*,internal/models/**/*.*,internal/pkg/acuanclient/**/*.*,internal/pkg/dddnotification/**/*.*,internal/pkg/goigate/**/*.*,internal/pkg/graceful/**/*.*,internal/pkg/kafka/**/*.*,internal/pkg/queueunicorn/**/*.*,tests/**/*.*
+                  -Dsonar.cpd.exclusions=tests/**/*.*,internal/repositories/mysql/mock/**/*.*,internal/services/mock/**/*.*,internal/models/**/*.*
+                  -Dsonar.login=${sq_token} -Dsonar.projectVersion="$(cat ./semantic_version.txt)"
+                  -Dsonar.go.coverage.reportPaths=./cov.out
+
+      - step: &build-artifact
+          name: build artifact
+          caches: *gomod-cache
+          size: 2x
+          script:
+            - *config-git
+            - *install-deps
+            # - *upgrade-ugorji-workaround
+            - export TZ="Asia/Jakarta"
+            - export BUILD_DATE="$(date "+%Y%m%d-%H%M%S-%Z")"
+            - rm -f "${service_executable_and_user}"
+            - GOPRIVATE=bitbucket.org/Amartha GOOS=linux GOARCH=amd64 go build -o go-accounting-api -ldflags "-X main.commit=${BITBUCKET_COMMIT} -X main.build_datetime=${BUILD_DATE} -s -w -linkmode external -extldflags \"-static\" " ./cmd/api/main.go
+            - GOPRIVATE=bitbucket.org/Amartha GOOS=linux GOARCH=amd64 go build -o go-accounting-consumer -ldflags "-X main.commit=${BITBUCKET_COMMIT} -X main.build_datetime=${BUILD_DATE} -s -w -linkmode external -extldflags \"-static\" " ./cmd/consumer/main.go
+            - GOPRIVATE=bitbucket.org/Amartha GOOS=linux GOARCH=amd64 go build -o go-accounting-cronjob -ldflags "-X main.commit=${BITBUCKET_COMMIT} -X main.build_datetime=${BUILD_DATE} -s -w -linkmode external -extldflags \"-static\" " ./cmd/job/main.go
+          artifacts:
+            - go-accounting-api
+            - go-accounting-consumer
+            - go-accounting-cronjob
+            
+      # - step:
+      #     name: Deploy to DEV
+      #     deployment: DEV
+      #     image: 
+      #       name: asia.gcr.io/amartha-dev/amartha/deployer:v4.1.0
+      #       username: _json_key
+      #       password: "$GCR_DEV_JSON_KEY"
+      #     runs-on: 
+      #       - gke.amartha.dev            
+      #     caches:
+      #       - docker
+      #     size: 2x
+      #     script:
+      #       - export PROJECT_ID=$GCP_PROJECT_ID
+      #       - export ZONE=$GCP_ZONE
+      #       - export CLUSTER_NAME=$GKE_CLUSTER_NAME
+      #       - export VERSION_NUMBER=$(git rev-parse --short HEAD)
+      #       - export IS_MULTIPLE_SVC=true
+      #       - bash /ci/scripts/main.sh auth-gcr
+      #       - bash /ci/scripts/main.sh build
+      #       - bash /ci/scripts/main.sh auth-gke
+      #       - bash /ci/scripts/main.sh deploy
+
+      - stage:
+          name: "Deploy to DEV [ArgoCD]"
+          deployment: DEV
+          steps:
+            - step:
+                <<: *build-push-docker
+                name: build and push docker image
+                runs-on:
+                  - gke.amartha.dev
+            - step: 
+                name: "Deploy to DEV"
+                runs-on:
+                  - gke.amartha.dev
+                image:
+                  name: asia-southeast2-docker.pkg.dev/amartha-dev/docker/argocd-deployer:v0.6.1
+                  username: _json_key
+                  password: "$GCR_DEV_JSON_KEY"
+                script:
+                  - export IS_MULTIPLE_SVC=true
+                  - export ENVIRONMENT=pay-${ENV_NAME}
+                  - export TAG=$(git rev-parse --short HEAD)
+                  - export SERVICE_TYPES=cronjob,consumer,api
+                  - /ci/scripts/argocd-sync.sh
+          trigger: automatic
+
+      - step: 
+          runs-on:
+            - gke.amartha.dev
+          <<: *api-automation-dev
+
+      # - step:
+      #     name: Deploy to UAT
+      #     deployment: UAT
+      #     trigger: manual
+      #     image: 
+      #       name: asia.gcr.io/amartha-dev/amartha/deployer:v4.1.0
+      #       username: _json_key
+      #       password: "$GCR_DEV_JSON_KEY"
+      #     runs-on: 
+      #       - gke.amartha.uat              
+      #     caches:
+      #       - docker
+      #     size: 2x
+      #     script:
+      #       - export PROJECT_ID=$GCP_PROJECT_ID
+      #       - export ZONE=$GCP_ZONE
+      #       - export CLUSTER_NAME=$GKE_CLUSTER_NAME
+      #       - export VERSION_NUMBER=$(git rev-parse --short HEAD)
+      #       - export IS_MULTIPLE_SVC=true
+      #       - bash /ci/scripts/main.sh auth-gcr
+      #       - bash /ci/scripts/main.sh build
+      #       - bash /ci/scripts/main.sh auth-gke
+      #       - bash /ci/scripts/main.sh push-config
+      #       - bash /ci/scripts/main.sh deploy
+
+      - step:
+          name: Deploy to UAT [ArgoCD]
+          runs-on:
+            - gke.amartha.uat
+          deployment: UAT
+          image:
+            name: asia-southeast2-docker.pkg.dev/amartha-dev/docker/argocd-deployer:v0.6.1
+            username: _json_key
+            password: "$GCR_DEV_JSON_KEY"
+          script:
+            - export IS_MULTIPLE_SVC=true
+            - export ENVIRONMENT=pay-${ENV_NAME}
+            - export TAG=$(git rev-parse --short HEAD)
+            - export SERVICE_TYPES=cronjob,consumer,api
+            - /ci/scripts/argocd-sync.sh
+          trigger: manual
+
+      - step:
+          runs-on:
+            - gke.amartha.uat
+          <<: *api-automation-uat
+
+      - step: *semantic-versioning
+
+      - step: 
+          name: Deploy to PROD [ArgoCD]
+          runs-on:
+            - gke.amartha.prod
+          deployment: PROD
+          image:
+            name: asia-southeast2-docker.pkg.dev/amartha-dev/docker/argocd-deployer:v0.6.1
+            username: _json_key
+            password: "$GCR_DEV_JSON_KEY"
+          script:
+            - export IS_MULTIPLE_SVC=true
+            - export ENVIRONMENT=pay-${ENV_NAME}
+            - export TAG=$(git rev-parse --short HEAD)
+            - export SERVICE_TYPES=cronjob,consumer,api
+            - /ci/scripts/argocd-sync.sh
+            - ./scripts/update-relic.sh
+          trigger: manual
+
+      # - step: &deploy-to-prod
+      #     name: Deploy to PROD
+      #     trigger: manual
+      #     deployment: PROD
+      #     image: 
+      #       name: asia.gcr.io/amartha-dev/amartha/deployer:v4.1.0
+      #       username: _json_key
+      #       password: "$GCR_DEV_JSON_KEY"
+      #     runs-on: 
+      #       - gke.amartha.prod              
+      #     caches:
+      #       - docker
+      #     size: 2x
+      #     script:
+      #       - export PROJECT_ID=$GCP_PROJECT_ID
+      #       - export ZONE=$GCP_ZONE
+      #       - export CLUSTER_NAME=$GKE_CLUSTER_NAME
+      #       - export VERSION_NUMBER=$(cat ./semantic_version.txt)
+      #       - export IS_MULTIPLE_SVC=true
+      #       - bash /ci/scripts/main.sh auth-gcr
+      #       - bash /ci/scripts/main.sh build
+      #       - bash /ci/scripts/main.sh auth-gke
+      #       - bash /ci/scripts/main.sh push-config
+      #       - bash /ci/scripts/main.sh deploy
+      #       - ./scripts/update-relic.sh
+  
+  custom:
+    api-automation-test-dev:
+      - step:
+          runs-on:
+            - gke.amartha.dev
+          <<: *api-automation-dev
+
+    api-automation-test-dev-debug:
+      - step:
+          runs-on:
+            - gke.amartha.dev
+          <<: *api-automation-dev-debug
+    
+    api-automation-test-dev-debug-non-gke:
+      - step: *api-automation-dev-debug
+
+    api-automation-test-dev-by-tags:
+      - variables:
+        - name: TAGS
+      - step:
+          runs-on:
+            - gke.amartha.dev
+          <<: *api-automation-dev-by-tags
+
+    api-automation-test-uat:
+      - step:
+          runs-on:
+            - gke.amartha.uat
+          <<: *api-automation-uat
+
+    api-automation-test-uat-by-tags:
+      - variables:
+        - name: TAGS
+      - step:
+          runs-on:
+            - gke.amartha.uat
+          <<: *api-automation-uat-by-tags
+
+    api-automation-test-dev-and-uat:
+      - parallel:
+        - step:
+            runs-on:
+              - gke.amartha.dev
+            <<: *api-automation-dev-debug
+        - step:
+            runs-on:
+              - gke.amartha.uat
+            <<: *api-automation-uat
+    
+    deploy-job-dev:
+      - step: *build-artifact
+      - step:
+          <<: *build-push-docker
+          name: build and push docker image
+          runs-on:
+            - gke.amartha.dev
+      - step: 
+          name: Deploy to DEV [ArgoCD]
+          runs-on:
+            - gke.amartha.dev
+          deployment: DEV
+          image:
+            name: asia-southeast2-docker.pkg.dev/amartha-dev/docker/argocd-deployer:v0.6.1
+            username: _json_key
+            password: "$GCR_DEV_JSON_KEY"
+          script:
+            - export IS_MULTIPLE_SVC=true
+            - export ENVIRONMENT=pay-${ENV_NAME}
+            - export TAG=$(git rev-parse --short HEAD)
+            - git commit --amend -m "custom deploy-cronjob deploy_cronjob"
+            - export SERVICE_TYPES=cronjob
+          trigger: manual
+
+    deploy-job-prod:
+      - step: *build-artifact
+      - step:
+          <<: *build-push-docker
+          name: build and push docker image
+          runs-on:
+            - gke.amartha.dev
+      - step: *semantic-versioning
+      - step: 
+          name: Deploy to PROD [ArgoCD]
+          runs-on:
+            - gke.amartha.prod
+          deployment: PROD
+          image:
+            name: asia-southeast2-docker.pkg.dev/amartha-dev/docker/argocd-deployer:v0.6.1
+            username: _json_key
+            password: "$GCR_DEV_JSON_KEY"
+          script:
+            - export IS_MULTIPLE_SVC=true
+            - export ENVIRONMENT=pay-${ENV_NAME}
+            - export TAG=$(git rev-parse --short HEAD)
+            - git commit --amend -m "custom deploy-cronjob deploy_cronjob"
+            - export SERVICE_TYPES=cronjob
+            - /ci/scripts/argocd-sync.sh
+            - ./scripts/update-relic.sh
+          trigger: manual

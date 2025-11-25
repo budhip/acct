@@ -1,0 +1,71 @@
+replicaCount: 1
+
+env: prod
+
+image:
+  repository: asia-southeast2-docker.pkg.dev/amartha-ewallet-dev-370304/docker/go-accounting
+  pullPolicy: IfNotPresent
+  tag: ""
+
+args:
+  - ./go-accounting-consumer
+  - run
+  - "-n=pas_account_stream"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "go-accounting-consumer-pasaccountstream"
+
+extraEnvs: []
+
+readinessProbe:
+  failureThreshold: 10
+  httpGet:
+    path: /api/health/readiness
+    port: 80
+    scheme: HTTP
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 10
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 300Mi
+  requests:
+    cpu: 100m
+    memory: 200Mi
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "80"
+  prometheus.io/path: "/metrics"
+
+autoscaling:
+  enabled: false
+  # minReplicas: 1
+  # maxReplicas: 2
+  # targetMemoryUtilizationPercentage: 80
+  # targetCPUUtilizationPercentage: 80
+
+volumeMounts:
+  - name: secret-volume
+    mountPath: /opt/Amartha/config
+    readOnly: true
+
+volumes:
+  - name: secret-volume
+    secret:
+      secretName: go-accounting-consumer-pasaccountstream-vault-service
+
+vault:
+  enabled: true
+  auth:
+    method: "kubernetes"
+    kubernetes:
+      role: go-accounting-consumer-pasaccountstream
+      serviceAccount: go-accounting-consumer-pasaccountstream
+  secrets:
+    service:
+      secretPath: apps/core-finance-platform/GO_ACCOUNTING

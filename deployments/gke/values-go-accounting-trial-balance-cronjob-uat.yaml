@@ -1,0 +1,109 @@
+cronjobs:
+  - name: monthly
+
+    # CronJob Config
+    schedule: "10 0 1 * *"
+    concurrencyPolicy: ""
+    failedJobsHistoryLimit: ""
+    successfulJobsHistoryLimit: ""
+    startingDeadlineSeconds: ""
+    suspend: true
+    timeZone: "Asia/Jakarta"
+    env:
+      - name: ENV
+        value: uat
+      - name: APP_TYPE
+        value: "job"
+      # - name: GOGC
+      #   value: "off"
+      - name: GOMAXPROCS
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+      - name: GOMEMLIMIT
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.memory
+
+    # Pod/Container Config
+    restartPolicy: OnFailure
+    containerTemplate:
+      command:
+          - "./go-accounting-cronjob"
+      args:
+        - "run"
+        - "-n=GenerateTrialBalanceBigQuery"
+        - "-v=v1"
+      resources:
+        limits:
+          cpu: 1000m
+          memory: 1500Mi
+        requests:
+          cpu: 500m
+          memory: 1000Mi
+
+    # Job Config
+    jobTemplate:
+      backoffLimit: 3
+      activeDeadlineSeconds: 3600
+      # ttlSecondsAfterFinished: 30
+
+image:
+  repository: asia-southeast2-docker.pkg.dev/amartha-ewallet-dev-370304/docker/go-accounting
+  pullPolicy: IfNotPresent
+  tag: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations:
+    iam.gke.io/gcp-service-account: go-accounting-api@amartha-ewallet-uat-370810.iam.gserviceaccount.com
+  name: go-accounting-trial-balance-cronjob
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "80"
+  prometheus.io/path: "/metrics"
+
+podLabels: {}
+
+resources:
+  limits:
+    cpu: "200m"
+    memory: "300Mi"
+  requests:
+    cpu: "100m"
+    memory: "200Mi"
+
+globalEnvs: []
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# gures and deploys secret from Vault in Kubernetes
+# This will also attach Kubernetes Secret create to your Deployment
+volumeMounts:
+  - name: secret-volume
+    mountPath: /opt/Amartha/config
+    readOnly: true
+
+volumes:
+  - name: secret-volume
+    secret:
+      secretName: go-accounting-trial-balance-cronjob-vault-service
+
+vault:
+  enabled: true
+  auth:
+    method: "kubernetes"
+    kubernetes:
+      role: go-accounting-trial-balance-cronjob
+      serviceAccount: go-accounting-trial-balance-cronjob
+  secrets:
+    service:
+      secretPath: apps/core-finance-platform/GO_ACCOUNTING
